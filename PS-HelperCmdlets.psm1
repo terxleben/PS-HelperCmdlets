@@ -109,7 +109,7 @@ Function Search-LDAP {
     $null = $ADSISearcher.PropertiesToLoad.Add("SAMAccountName")
     $null = $ADSISearcher.PropertiesToLoad.Add("distinguishedname")
     $Results = $ADSISearcher.FindAll()
-    $Results.count
+
     if ($Results.count -ne 0) {
         $ResultObject = foreach ($result in $Results.Properties) {
             $result | out-null
@@ -512,6 +512,62 @@ Function Remove-Profile {
                     Get-CimInstance -ComputerName $Computer -Class Win32_UserProfile | Where-Object { $_.LocalPath.split('\')[-1] -eq $User } | Remove-CimInstance -verbose
                 }
 	        }
+        }
+    }
+
+    END {}
+}
+
+Function Set-SMBSharesReadOnly {
+    <#
+    .Synopsis
+        This will set all Non-Admin SMB shares of a computer to read only.
+      
+    .NOTES
+        Name: Set-SMBSharesReadOnly
+        Author: terxleben
+      
+    .LINK
+        <>
+      
+      
+    .PARAMETER Computer
+        By default it will disable all shares on the local computer, otherwise pass it 
+        a single or array of computers names to run it on remote computers.
+      
+    .EXAMPLE
+        Set-SMBSharesReadOnly -ComputerName 'Jenkins'
+      
+        Description:
+        Sets all non-admin SMB shares to read only on computer Jenkins.
+    #>
+
+	[CmdletBinding(SupportsShouldProcess)]
+	param (
+        [Parameter(ValueFromPipeline,mandatory=$false)]
+        [string[]]$ComputerName = $env:computername
+	)
+	
+    BEGIN {}
+
+    PROCESS {
+        foreach ($c in $ComputerName) {
+            if ($c -eq $env:ComputerName) {
+                foreach ($i in (gwmi -Class win32_share -filter "Type = 0")) {
+                    foreach ($s in (Get-SmbShareAccess $i.name)) {
+                        Grant-SmbShareAccess -Name $s.name -AccountName $s.AccountName -AccessRight Read -WhatIf:$WhatIfPreference
+                    }
+                }
+            } Else {
+                Invoke-Command -ComputerName $c -ArgumentList $WhatIfPreference {
+                    import-module smbshare
+                    foreach ($i in (gwmi -Class win32_share -filter "Type = 0")) {
+                        foreach ($s in (Get-SmbShareAccess $i.name)) {
+                            Grant-SmbShareAccess -Name $s.name -AccountName $s.AccountName -AccessRight Read -WhatIf:$using:WhatIfPreference
+                        }
+                    }
+                }
+            }
         }
     }
 
