@@ -105,7 +105,7 @@ Function Search-LDAP {
     #>
     param (
         [Parameter(Mandatory)] [string] $Name,
-        [Parameter(Mandatory)] [ValidateSet("User","Computer")] $Category,
+        [Parameter(Mandatory)] [ValidateSet("User","Computer","Group")] $Category,
         $SearchRoot = (New-Object System.DirectoryServices.DirectoryEntry)
     )
     $ADSISearcher = New-Object DirectoryServices.DirectorySearcher("(&(objectCategory=$Category)(|(cn=$Name)(samaccountname=$Name)))")
@@ -322,7 +322,7 @@ Function Send-ARP {
     <#
     .SYNOPSIS
         This will generate and send an ARP packet on the local LAN. Useful for identifying the MAC of a device, or if a device is silently using an IP.
-        This does not have any remote functionality. Remember ARP is local to your NIC's subnet - this won't return relaible results if sending an ARP for an IP outside of your subnet - 
+        This does not have any remote functionality. Remember ARP is local to your NIC's subnet - this won't return reliable results if sending an ARP for an IP outside of your subnet - 
         it will most likely return results from your routing infrastructure.
          
     .NOTES
