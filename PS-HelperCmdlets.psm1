@@ -46,9 +46,14 @@ Function Get-RandomPassword {
     # Add Assembly for system web so we get the 
     [Reflection.Assembly]::LoadWithPartialName("System.Web") | Out-Null
 
+    if ($Length -lt $NonAlphaNumericCount) {
+        Write-Warning "Non AlphaNumeric count greater than password length. All characters will be Non AlphaNumeric."
+        $NonAlphaNumericCount = $Length
+    }
+
     switch ($AsPlainText) {
         $true {
-            Write-Warning "Warning: This password generated may be stored in session logs or otherwise. Remove parameter -AsPlainText to mitigate this."
+            Write-Warning "This password generated may be stored in session logs or otherwise. Remove parameter -AsPlainText to mitigate this."
             $Password = [System.Web.Security.Membership]::GeneratePassword($Length,$NonAlphaNumericCount)
         }
         $false {
@@ -447,12 +452,12 @@ Function Get-Uptime {
                     BootTime        = $BootTime
 	                }
 	            } Else {
-	    	        $results = invoke-command -computername $Computer -scriptblock {
+	    	        invoke-command -HideComputerName -computername $Computer -scriptblock {
                         $BootTime = (gcim Win32_OperatingSystem).LastBootUpTime
 		                $UpTime = ((get-date) - $BootTime)
 
                         [PSCustomObject]@{
-                        ComputerName    = $Computer;
+                        ComputerName    = $using:computer;
                         TotalDaysUp     = [math]::Round($UpTime.TotalDays,2);
                         Days            = $UpTime.Days;
                         Hours           = $UpTime.Hours;
